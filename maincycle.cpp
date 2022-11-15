@@ -4,6 +4,11 @@
 #include <QFile>
 #include <QString>
 #include <QTextStream>
+#include <QThread>
+
+#include <iostream>
+#include <chrono>
+#include <wiringPi.h>
 
 MainCycle::MainCycle(QObject *parent, bool b):
     QThread(parent), Stop(b)
@@ -13,6 +18,18 @@ MainCycle::MainCycle(QObject *parent, bool b):
 // run() will be called when a thread starts
 void MainCycle::run()
 {
+    /* Three GPIO PINS are connected to the stepper driver.
+     * One pin on the stepper driver reads a puls signal to move the stepper motor in clockwise direction,
+     * the second one reads a puls signal to move the stepper motor in counter clockwise direction,
+     * and another pin reads a boolean so the driver knows if it needs to read the counter clockwise or the clockwise puls signal.*/
+
+    wiringPiSetup(); // Setup the GPIO library
+    pinMode(0, OUTPUT); // Configure GPIO0 as an output = engage pulsgenerator
+    pinMode(1, OUTPUT); // Configure GPIO1 as an output = disengage pulsgenerator
+    pinMode(2, OUTPUT); // Configure QPIO2 as an output = directionPIN, 0 = engage, 1 = disengage
+
+    using namespace std::this_thread;
+    using namespace std::chrono;
 
    // setting the counter to the last stored value
     int i = 0;
@@ -53,14 +70,53 @@ void MainCycle::run()
         file.close();
     }
 
+    // Initializing the GPIO pins of the raspberry PI
+
+
     // Starting the loop
     while(true) {
+
+        // Prevent other threads from changing the "stop" value
         QMutex mutex;
-        // prevent other threads from changing the "stop" value
         mutex.lock();
         if(this->Stop) break;
         mutex.unlock();
 
+        // Engage actuator
+        qDebug() << "engaging actuator";
+        digitalWrite(2, LOW);
+        for(int n = 0; n < 20; n++) {
+            qDebug() << "highPIN";
+            digitalWrite(0, HIGH);
+            qDebug() << "100ms delay";
+            sleep_for(milliseconds(100));
+            qDebug() << "lowPIN";
+            digitalWrite(0, LOW);
+            qDebug() << "100ms delay";
+            sleep_for(milliseconds(100));
+        }
+
+        // Timeout
+        this->msleep(5000);
+
+        // Disengage actuator
+        qDebug() << "disengaging actuator";
+        digitalWrite(2, HIGH);
+        for(int n = 0; n < 20; n++) {
+            qDebug() << "highPIN";
+            digitalWrite(1, HIGH);
+            qDebug() << "100ms delay";
+            sleep_for(milliseconds(100));
+            qDebug() << "lowPIN";
+            digitalWrite(1, LOW);
+            qDebug() << "100ms delay";
+            sleep_for(milliseconds(100));
+        }
+
+        // Timeout
+        this->msleep(5000);
+
+        // Update the counter
         i++;
         emit valueChanged(i);
 
@@ -74,6 +130,6 @@ void MainCycle::run()
         file.close();
 
         qDebug() << "Cycle running...";
-        this->msleep(500);
+
     }
 }
