@@ -1,13 +1,11 @@
 #include "maincycle.h"
 #include <QDebug>
-#include <QMutex>
 #include <QFile>
 #include <QString>
 #include <QTextStream>
 #include <QThread>
 
 #include <iostream>
-#include <chrono>
 #include <wiringPi.h>
 
 MainCycle::MainCycle(QObject *parent, bool b):
@@ -70,17 +68,11 @@ void MainCycle::run()
         file.close();
     }
 
-    // Initializing the GPIO pins of the raspberry PI
-
-
     // Starting the loop
     while(true) {
 
-        // Prevent other threads from changing the "stop" value
-        QMutex mutex;
-        mutex.lock();
         if(this->Stop) break;
-        mutex.unlock();
+        qDebug() << "Cycle running...";
 
         // Engage actuator
         qDebug() << "engaging actuator";
@@ -89,15 +81,17 @@ void MainCycle::run()
             qDebug() << "highPIN";
             digitalWrite(0, HIGH);
             qDebug() << "100ms delay";
-            sleep_for(milliseconds(100));
+            QThread::usleep(50);
+            //sleep_for(milliseconds(100));
             qDebug() << "lowPIN";
             digitalWrite(0, LOW);
             qDebug() << "100ms delay";
-            sleep_for(milliseconds(100));
+            QThread::msleep(7);
+            //sleep_for(milliseconds(100));
         }
 
         // Timeout
-        this->msleep(5000);
+        QThread::msleep(5000);
 
         // Disengage actuator
         qDebug() << "disengaging actuator";
@@ -106,15 +100,17 @@ void MainCycle::run()
             qDebug() << "highPIN";
             digitalWrite(1, HIGH);
             qDebug() << "100ms delay";
-            sleep_for(milliseconds(100));
+            QThread::usleep(50);
+            //sleep_for(milliseconds(100));
             qDebug() << "lowPIN";
             digitalWrite(1, LOW);
             qDebug() << "100ms delay";
-            sleep_for(milliseconds(100));
+            QThread::msleep(7);
+            //sleep_for(milliseconds(100));
         }
 
         // Timeout
-        this->msleep(5000);
+        QThread::msleep(5000);
 
         // Update the counter
         i++;
@@ -128,8 +124,6 @@ void MainCycle::run()
         out << text;
         file.flush();
         file.close();
-
-        qDebug() << "Cycle running...";
 
     }
 }
