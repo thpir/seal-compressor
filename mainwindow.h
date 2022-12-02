@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QString>
 #include "maincycle.h"
+#include "global.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -33,6 +34,8 @@ private slots:
     void on_buttonReset_clicked();
 
     void updateStatusBar(QString message, QColor color);
+
+    void on_buttonSave_clicked();
 
 private:
     Ui::MainWindow *ui;

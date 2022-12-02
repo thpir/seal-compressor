@@ -22,6 +22,10 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     ui->buttonStart->setEnabled(true);
     ui->buttonStop->setDisabled(true);
+    ui->buttonSave->setEnabled(true);
+    ui->lineEditSteps->setEnabled(true);
+    ui->lineEditStepWidth->setEnabled(true);
+    ui->lineEditPeriod->setEnabled(true);
     QString counter = "0";
     QFile file("counter.txt");
     if (!file.exists()) {
@@ -63,6 +67,10 @@ void MainWindow::on_buttonStart_clicked()
     ui->buttonStart->setDisabled(true);
     ui->buttonReset->setDisabled(true);
     ui->buttonStop->setEnabled(true);
+    ui->buttonSave->setDisabled(true);
+    ui->lineEditSteps->setDisabled(true);
+    ui->lineEditStepWidth->setDisabled(true);
+    ui->lineEditPeriod->setDisabled(true);
 
     isRunning = true;
 
@@ -82,6 +90,10 @@ void MainWindow::on_buttonStop_clicked()
     ui->buttonStop->setDisabled(true);
     ui->buttonStart->setEnabled(true);
     ui->buttonReset->setEnabled(true);
+    ui->buttonSave->setEnabled(true);
+    ui->lineEditSteps->setEnabled(true);
+    ui->lineEditStepWidth->setEnabled(true);
+    ui->lineEditPeriod->setEnabled(true);
 
     isRunning = false;
 
@@ -128,3 +140,10 @@ void MainWindow::updateStatusBar(QString message, QColor color) {
 
 }
 
+
+void MainWindow::on_buttonSave_clicked()
+{
+   global::numOfSteps = ui->lineEditSteps->text().toInt();
+   global::stepDuration = ui->lineEditStepWidth->text().toInt();
+   global::timeBetweenSteps = ui->lineEditPeriod->text().toInt();
+}

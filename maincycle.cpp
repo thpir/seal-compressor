@@ -1,4 +1,5 @@
 #include "maincycle.h"
+#include "global.h"
 #include <QDebug>
 #include <QFile>
 #include <QString>
@@ -77,16 +78,16 @@ void MainCycle::run()
         // Engage actuator
         qDebug() << "engaging actuator";
         digitalWrite(2, LOW);
-        for(int n = 0; n < 20; n++) {
+        for(int n = 0; n < global::numOfSteps; n++) {
             qDebug() << "highPIN";
             digitalWrite(0, HIGH);
             qDebug() << "100ms delay";
-            QThread::usleep(50);
+            QThread::usleep(global::stepDuration);
             //sleep_for(milliseconds(100));
             qDebug() << "lowPIN";
             digitalWrite(0, LOW);
             qDebug() << "100ms delay";
-            QThread::msleep(7);
+            QThread::msleep(global::timeBetweenSteps);
             //sleep_for(milliseconds(100));
         }
 
@@ -96,16 +97,16 @@ void MainCycle::run()
         // Disengage actuator
         qDebug() << "disengaging actuator";
         digitalWrite(2, HIGH);
-        for(int n = 0; n < 20; n++) {
+        for(int n = 0; n < global::numOfSteps; n++) {
             qDebug() << "highPIN";
             digitalWrite(1, HIGH);
             qDebug() << "100ms delay";
-            QThread::usleep(50);
+            QThread::usleep(global::stepDuration);
             //sleep_for(milliseconds(100));
             qDebug() << "lowPIN";
             digitalWrite(1, LOW);
             qDebug() << "100ms delay";
-            QThread::msleep(7);
+            QThread::msleep(global::timeBetweenSteps);
             //sleep_for(milliseconds(100));
         }
 
