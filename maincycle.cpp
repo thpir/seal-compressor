@@ -76,6 +76,11 @@ void MainCycle::run()
         qDebug() << "Cycle running...";
 
         // Engage actuator
+        // Set the boolean to indicate a cycle is running.
+        // If we don't do this and we're quiting the application,
+        // we forget the stepper motors acutal location and the
+        // compression will be performed faulty when the users starts a new cycle
+        global::cycleFinished = false;
         qDebug() << "engaging actuator";
         digitalWrite(2, LOW);
         for(int n = 0; n < global::numOfSteps; n++) {
@@ -92,7 +97,7 @@ void MainCycle::run()
         }
 
         // Timeout
-        QThread::msleep(5000);
+        QThread::msleep(global::compressTime * 1000);
 
         // Disengage actuator
         qDebug() << "disengaging actuator";
@@ -109,6 +114,8 @@ void MainCycle::run()
             QThread::msleep(global::timeBetweenSteps);
             //sleep_for(milliseconds(100));
         }
+
+        global::cycleFinished = true;
 
         // Timeout
         QThread::msleep(5000);

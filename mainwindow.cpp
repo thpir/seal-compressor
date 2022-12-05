@@ -146,4 +146,24 @@ void MainWindow::on_buttonSave_clicked()
    global::numOfSteps = ui->lineEditSteps->text().toInt();
    global::stepDuration = ui->lineEditStepWidth->text().toInt();
    global::timeBetweenSteps = ui->lineEditPeriod->text().toInt();
+   global::compressTime = ui->lineEditCompressTime->text().toInt();
+}
+
+void MainWindow::on_actionQuit_triggered()
+{
+    QString info_text = "Completing last cycle before closing...";
+    //QMessageBox::information(this, "Quitting appliction", info_text);
+    while (!global::cycleFinished) {
+        // Do nothing
+    }
+    QCoreApplication::quit();
+}
+
+void MainWindow::on_actionAbout_triggered()
+{
+    QString about_text;
+        about_text  = "Author:  Thpir\n";
+        about_text += "Date:    05-12-2022\n";
+        about_text += "(C) Seal Compressor V1.0.0 (R)";
+        QMessageBox::about(this, "About My Notepad", about_text);
 }
