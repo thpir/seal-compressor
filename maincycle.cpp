@@ -14,7 +14,7 @@ MainCycle::MainCycle(QObject *parent, bool b):
 {
 }
 
-// run() will be called when a thread starts
+// run() will be called when a thread is started in mainwindow.cpp
 void MainCycle::run()
 {
     /* Three GPIO PINS are connected to the stepper driver.
@@ -52,6 +52,7 @@ void MainCycle::run()
         file.close();
 
     } else {
+        // The file does exist!
         qDebug() << "File does exist!";
         if(file.open(QIODevice::ReadOnly | QIODevice::Text)) {
             QTextStream in(&file);
@@ -69,9 +70,15 @@ void MainCycle::run()
         file.close();
     }
 
-    // Starting the loop
+    // Starting the 'infinite' loop
     while(true) {
 
+        /* Check if the operator pressed stop. Since we have no encoder on the stepper motor
+         * it is not advised to break the loop while the stepper motor is NOT in home position.
+         * If we would just stop the cycle when the motor is runnig, the next time the motor starts,
+         * he will not correctly compress the seal. We could fix this by addind an encoder but for
+         * this test stand we wanted to keep the hardware cost low. If we still want to stop as quick as possible,
+         * close the running program without pressing stop first.*/
         if(this->Stop) break;
         qDebug() << "Cycle running...";
 

@@ -19,6 +19,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
 
+    // Set the UI
     ui->setupUi(this);
     ui->buttonStart->setEnabled(true);
     ui->buttonStop->setDisabled(true);
@@ -64,6 +65,7 @@ void MainWindow::on_buttonStart_clicked()
 {
     qDebug() << "Cycle started...";
 
+    // Update the UI
     ui->buttonStart->setDisabled(true);
     ui->buttonReset->setDisabled(true);
     ui->buttonStop->setEnabled(true);
@@ -72,6 +74,7 @@ void MainWindow::on_buttonStart_clicked()
     ui->lineEditStepWidth->setDisabled(true);
     ui->lineEditPeriod->setDisabled(true);
 
+    // Update the global variable
     isRunning = true;
 
     // Configure the statusbar
@@ -87,6 +90,7 @@ void MainWindow::on_buttonStop_clicked()
 {
     qDebug() << "Cycle stopped...";
 
+    // Update the UI
     ui->buttonStop->setDisabled(true);
     ui->buttonStart->setEnabled(true);
     ui->buttonReset->setEnabled(true);
@@ -95,6 +99,7 @@ void MainWindow::on_buttonStop_clicked()
     ui->lineEditStepWidth->setEnabled(true);
     ui->lineEditPeriod->setEnabled(true);
 
+    // Update the global variable
     isRunning = false;
 
     // Configure the statusbar
@@ -110,6 +115,7 @@ void MainWindow::on_buttonReset_clicked()
 {
     qDebug() << "Reset button clicked...";
 
+    // Verify is the user really wants to reset the counter
     QMessageBox::StandardButton reply = QMessageBox::question(this,
                                                               "Reset Counter", "Are you sure you want to reset the counter?",
                                                               QMessageBox::Yes | QMessageBox::No);
@@ -143,6 +149,7 @@ void MainWindow::updateStatusBar(QString message, QColor color) {
 
 void MainWindow::on_buttonSave_clicked()
 {
+   // Save the parameters
    global::numOfSteps = ui->lineEditSteps->text().toInt();
    global::stepDuration = ui->lineEditStepWidth->text().toInt();
    global::timeBetweenSteps = ui->lineEditPeriod->text().toInt();
