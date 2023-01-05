@@ -17,13 +17,14 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-    MainCycle *mainCycle;
+    MainCycle *mainCycle = nullptr;
 
     // public boolean to track running process
     bool isRunning = false;
 
 public slots:
     void onValueChanged(int);
+    void slotProcessFinished(bool);
 
 private slots:
 
@@ -43,5 +44,8 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+    void uiButtonAction(bool startButton, bool otherButtons);
+    bool exitThePro;
+    void initMainCycle();
 };
 #endif // MAINWINDOW_H

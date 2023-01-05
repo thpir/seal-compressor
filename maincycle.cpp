@@ -14,6 +14,68 @@ MainCycle::MainCycle(QObject *parent, bool b):
 {
 }
 
+MainCycle::~MainCycle()
+{
+    exit();
+}
+
+void MainCycle::ReadWiteInTheFile(int *counterInd, QIODevice::OpenModeFlag qIODevice)
+{
+    QFile* file = b_InputData.mfile;
+    file->open(QIODevice::ReadWrite);
+
+    if(file == nullptr)
+    {
+        b_InputData.mfile->setFileName("counter.txt");
+        b_InputData.mfile->open(QIODevice::ReadWrite);
+    }
+
+    if(qIODevice == QIODevice::WriteOnly)
+    {
+        file->resize(0);
+        QTextStream out(file);
+        QString text = QString::number(*counterInd);
+        out << text;
+    }
+    else if(qIODevice == QIODevice::ReadOnly)
+    {
+        QTextStream in(file);
+        QString text = in.readAll();
+        if(!text.isNull())
+        {
+            *counterInd = text.toInt();
+        }
+        else
+        {
+            *counterInd = 0;
+            QTextStream out(file);
+            QString text = QString::number(*counterInd);
+            out << text;
+        }
+    }
+
+    cycleCounts = *counterInd;
+
+    file->flush();
+    file->close();
+    file = nullptr;
+}
+
+void MainCycle::doActionOnPin(int pinNum)
+{
+    for(int n = 0; n < b_InputData.numOfSteps; n++)
+    {
+        qDebug() << "highPIN";
+        digitalWrite(pinNum, HIGH);
+        qDebug() << "100ms delay";
+        QThread::usleep(b_InputData.stepDuration);
+        qDebug() << "lowPIN";
+        digitalWrite(pinNum, LOW);
+        qDebug() << "100ms delay";
+        QThread::msleep(b_InputData.timeBetweenSteps);
+    }
+}
+
 // run() will be called when a thread is started in mainwindow.cpp
 void MainCycle::run()
 {
@@ -30,45 +92,9 @@ void MainCycle::run()
     using namespace std::this_thread;
     using namespace std::chrono;
 
-   // setting the counter to the last stored value
-    int i = 0;
-    QFile file("counter.txt");
-    if(!file.exists()) {
-        // The file doesn't exist
-        qDebug() << "File doesn't exist yet";
-        file.close();
-
-        // So we create the file
-        qDebug() << "Creating file...";
-        QFile file("counter.txt");
-        file.open(QIODevice::WriteOnly);
-
-        // Set i to 0 and store to the file
-        i = 0;
-        QTextStream out(&file);
-        QString text = QString::number(i);
-        out << text;
-        file.flush();
-        file.close();
-
-    } else {
-        // The file does exist!
-        qDebug() << "File does exist!";
-        if(file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            QTextStream in(&file);
-            QString text = in.readAll();
-            try {
-                i = text.toInt();
-            } catch(...) {
-               i = 0;
-               QTextStream out(&file);
-               QString text = QString::number(i);
-               out << text;
-               file.flush();
-            }
-        }
-        file.close();
-    }
+    // Initializeing the variable to store the pinnumber and read/write action for saving the counter value
+    int thePin = 0;
+    long readWriteAction = 0;
 
     // Starting the 'infinite' loop
     while(true) {
@@ -79,7 +105,15 @@ void MainCycle::run()
          * he will not correctly compress the seal. We could fix this by addind an encoder but for
          * this test stand we wanted to keep the hardware cost low. If we still want to stop as quick as possible,
          * close the running program without pressing stop first.*/
-        if(this->Stop) break;
+        if(this->Stop)
+        {
+            // Save i to the counter.txt file
+            readWriteAction = QIODevice::WriteOnly;
+            ReadWiteInTheFile(&cycleCounts, (QIODevice::OpenModeFlag) readWriteAction);
+            emit SignalPorcessFinished(true);
+            break;
+        }
+
         qDebug() << "Cycle running...";
 
         // Engage actuator
@@ -87,58 +121,39 @@ void MainCycle::run()
         // If we don't do this and we're quiting the application,
         // we forget the stepper motors acutal location and the
         // compression will be performed faulty when the users starts a new cycle
-        global::cycleFinished = false;
+        b_InputData.cycleFinished = false;
         qDebug() << "engaging actuator";
-        digitalWrite(2, LOW);
-        for(int n = 0; n < global::numOfSteps; n++) {
-            qDebug() << "highPIN";
-            digitalWrite(0, HIGH);
-            qDebug() << "100ms delay";
-            QThread::usleep(global::stepDuration);
-            //sleep_for(milliseconds(100));
-            qDebug() << "lowPIN";
-            digitalWrite(0, LOW);
-            qDebug() << "100ms delay";
-            QThread::msleep(global::timeBetweenSteps);
-            //sleep_for(milliseconds(100));
-        }
+        thePin = 0;
+        doActionOnPin(thePin);
 
         // Timeout
-        QThread::msleep(global::compressTime * 1000);
+        QThread::msleep(b_InputData.compressTime * 1000);
 
         // Disengage actuator
         qDebug() << "disengaging actuator";
-        digitalWrite(2, HIGH);
-        for(int n = 0; n < global::numOfSteps; n++) {
-            qDebug() << "highPIN";
-            digitalWrite(1, HIGH);
-            qDebug() << "100ms delay";
-            QThread::usleep(global::stepDuration);
-            //sleep_for(milliseconds(100));
-            qDebug() << "lowPIN";
-            digitalWrite(1, LOW);
-            qDebug() << "100ms delay";
-            QThread::msleep(global::timeBetweenSteps);
-            //sleep_for(milliseconds(100));
-        }
+        thePin = 1;
+        doActionOnPin(thePin);
 
-        global::cycleFinished = true;
+        b_InputData.cycleFinished = true;
 
         // Timeout
         QThread::msleep(5000);
 
         // Update the counter
-        i++;
-        emit valueChanged(i);
-
-        // Save i to the counter.txt file
-        QFile file("counter.txt");
-        file.open(QIODevice::WriteOnly);
-        QTextStream out(&file);
-        QString text = QString::number(i);
-        out << text;
-        file.flush();
-        file.close();
-
+        cycleCounts++;
+        emit valueChanged(cycleCounts);
     }
+}
+
+void MainCycle::Init()
+{
+    b_InputData.numOfSteps = 20; // Amount of steps the motor should take in one movement forward or backwards
+    b_InputData.stepDuration = 55; // How long the pulse should remain high in us
+    b_InputData.timeBetweenSteps = 9; // Time between each pulse send to the stepper driver in ms
+    b_InputData.compressTime = 10; // Time that the seal should be compressed
+    b_InputData.cycleFinished = true; // Boolean to check wether a cycle is running or finished
+    b_InputData.mfile = new QFile;
+    b_InputData.mfile->setFileName("counter.txt");
+
+    cycleCounts = 0;
 }

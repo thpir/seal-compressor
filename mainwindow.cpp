@@ -21,39 +21,51 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Set the UI
     ui->setupUi(this);
-    ui->buttonStart->setEnabled(true);
-    ui->buttonStop->setDisabled(true);
-    ui->buttonSave->setEnabled(true);
-    ui->lineEditSteps->setEnabled(true);
-    ui->lineEditStepWidth->setEnabled(true);
-    ui->lineEditPeriod->setEnabled(true);
-    QString counter = "0";
-    QFile file("counter.txt");
-    if (!file.exists()) {
-        ui->label->setText("Number of cycles: " + counter);
-    } else {
-        file.open(QIODevice::ReadOnly);
-        QTextStream in(&file);
-        counter = in.readAll();
-        ui->label->setText("Number of cycles: " + counter);
-    }
-    file.close();
+    uiButtonAction(false, false);
 
     // Configure the statusbar
     updateStatusBar("Press \"start\" to begin the test...", QColor(Qt::yellow));
 
     // create an instance of MainCycle
-    mainCycle = new MainCycle(this);
-
-    // connect signal/slot
-    connect(mainCycle, SIGNAL(valueChanged(int)),
-            this, SLOT(onValueChanged(int)));
-
+    initMainCycle();
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+
+    if (mainCycle != nullptr)
+    {
+        delete mainCycle;
+        mainCycle = nullptr;
+    }
+}
+
+void MainWindow::initMainCycle()
+{
+    int index = 0;
+
+    mainCycle = new MainCycle(this);
+
+    if(mainCycle != nullptr)
+    {
+        mainCycle->Init();
+
+        if (!mainCycle->b_InputData.mfile->exists()) {
+            ui->label->setText("Number of cycles: " + QString::number(index));
+        } else {
+            long readWriteAction = QIODevice::ReadOnly;
+            mainCycle->ReadWiteInTheFile(&index, (QIODevice::OpenModeFlag) readWriteAction);
+            ui->label->setText("Number of cycles: " + QString::number(index));
+        }
+
+        // Connect signal/slot
+        connect(mainCycle, SIGNAL(valueChanged(int)),
+                this, SLOT(onValueChanged(int)));
+
+        connect(mainCycle, SIGNAL(SignalProcessFinished(bool)),
+                this, SLOT(slotProcessFinished(bool)), Qt::ConnectionType::DirectConnection);
+    }
 }
 
 void MainWindow::onValueChanged(int count)
@@ -61,18 +73,37 @@ void MainWindow::onValueChanged(int count)
     ui->label->setText("Number of cycles: " + QString::number(count));
 }
 
+void MainWindow::slotProcessFinished(bool processFinished)
+{
+    exitThePro = processFinished;
+}
+
+void MainWindow::uiButtonAction(bool startButton, bool otherButtons)
+{
+    if(startButton)
+    {
+        ui->buttonStart->setDisabled(true);
+        ui->buttonStop->setDisabled(false);
+    }
+    else
+    {
+        ui->buttonStart->setDisabled(false);
+        ui->buttonStop->setDisabled(true);
+    }
+
+    ui->buttonReset->setDisabled(otherButtons);
+    ui->buttonSave->setDisabled(otherButtons);
+    ui->lineEditSteps->setDisabled(otherButtons);
+    ui->lineEditStepWidth->setDisabled(otherButtons);
+    ui->lineEditPeriod->setDisabled(otherButtons);
+}
+
 void MainWindow::on_buttonStart_clicked()
 {
     qDebug() << "Cycle started...";
 
     // Update the UI
-    ui->buttonStart->setDisabled(true);
-    ui->buttonReset->setDisabled(true);
-    ui->buttonStop->setEnabled(true);
-    ui->buttonSave->setDisabled(true);
-    ui->lineEditSteps->setDisabled(true);
-    ui->lineEditStepWidth->setDisabled(true);
-    ui->lineEditPeriod->setDisabled(true);
+    uiButtonAction(true, true);
 
     // Update the global variable
     isRunning = true;
@@ -80,10 +111,18 @@ void MainWindow::on_buttonStart_clicked()
     // Configure the statusbar
     updateStatusBar("Running ...", QColor(Qt::green));
 
-    // Start the thread
-    mainCycle->Stop = false;
-    mainCycle->start();
+    if(mainCycle == nullptr)
+    {
+        initMainCycle();
+    }
 
+    if(mainCycle != nullptr)
+    {
+        // Start the thread
+        mainCycle->Stop = false;
+        exitThePro = false;
+        mainCycle->start();
+    }
 }
 
 void MainWindow::on_buttonStop_clicked()
@@ -91,13 +130,7 @@ void MainWindow::on_buttonStop_clicked()
     qDebug() << "Cycle stopped...";
 
     // Update the UI
-    ui->buttonStop->setDisabled(true);
-    ui->buttonStart->setEnabled(true);
-    ui->buttonReset->setEnabled(true);
-    ui->buttonSave->setEnabled(true);
-    ui->lineEditSteps->setEnabled(true);
-    ui->lineEditStepWidth->setEnabled(true);
-    ui->lineEditPeriod->setEnabled(true);
+    uiButtonAction(false, false);
 
     // Update the global variable
     isRunning = false;
@@ -107,6 +140,14 @@ void MainWindow::on_buttonStop_clicked()
 
     // Interrupt the thread
     mainCycle->Stop = true;
+
+    while(true) {
+        if(exitThePro)
+        {
+            qDebug() << "Click on Start...";
+            break;
+        }
+    }
 
 }
 
@@ -123,13 +164,9 @@ void MainWindow::on_buttonReset_clicked()
         qDebug() << "Counter is resetted...";
         // Reset the counter file
         // Save i to the counter.txt file
-        QFile file("counter.txt");
-        file.open(QIODevice::WriteOnly);
-        QTextStream out(&file);
-        QString text = QString::number(0);
-        out << text;
-        file.flush();
-        file.close();
+        long readWriteAction = QIODevice::WriteOnly;
+        int i = 0;
+        mainCycle->ReadWiteInTheFile(&i, (QIODevice::OpenModeFlag) readWriteAction);
         ui->label->setText("Number of cycles: 0");
     } else {
         qDebug() << "Reset abort...";
@@ -150,17 +187,17 @@ void MainWindow::updateStatusBar(QString message, QColor color) {
 void MainWindow::on_buttonSave_clicked()
 {
    // Save the parameters
-   global::numOfSteps = ui->lineEditSteps->text().toInt();
-   global::stepDuration = ui->lineEditStepWidth->text().toInt();
-   global::timeBetweenSteps = ui->lineEditPeriod->text().toInt();
-   global::compressTime = ui->lineEditCompressTime->text().toInt();
+   mainCycle->b_InputData.numOfSteps = ui->lineEditSteps->text().toInt();
+   mainCycle->b_InputData.stepDuration = ui->lineEditStepWidth->text().toInt();
+   mainCycle->b_InputData.timeBetweenSteps = ui->lineEditPeriod->text().toInt();
+   mainCycle->b_InputData.compressTime = ui->lineEditCompressTime->text().toInt();
 }
 
 void MainWindow::on_actionQuit_triggered()
 {
     QString info_text = "Completing last cycle before closing...";
     //QMessageBox::information(this, "Quitting appliction", info_text);
-    while (!global::cycleFinished) {
+    while (!mainCycle->b_InputData.cycleFinished) {
         // Do nothing
     }
     QCoreApplication::quit();
@@ -170,7 +207,7 @@ void MainWindow::on_actionAbout_triggered()
 {
     QString about_text;
         about_text  = "Author:  Thpir\n";
-        about_text += "Date:    05-12-2022\n";
-        about_text += "(C) Seal Compressor V1.0.0 (R)";
+        about_text += "Date:    05-01-2023\n";
+        about_text += "(C) Seal Compressor V1.0.1 (R)";
         QMessageBox::about(this, "About My Notepad", about_text);
 }
