@@ -4,7 +4,6 @@
 #include <QMainWindow>
 #include <QString>
 #include "maincycle.h"
-#include "global.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -20,11 +19,11 @@ public:
     MainCycle *mainCycle = nullptr;
 
     // public boolean to track running process
-    bool isRunning = false;
+    //bool isRunning = false;
 
 public slots:
     void onValueChanged(int);
-    void slotProcessFinished(bool);
+    void SlotprocessFinished(bool);
 
 private slots:
 
@@ -44,7 +43,7 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    void uiButtonAction(bool startButton, bool otherButtons);
+    void uiButtonAction(bool startButton, bool otherButtons, bool intermediateProcess);
     bool exitThePro;
     void initMainCycle();
 };

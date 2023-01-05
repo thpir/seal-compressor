@@ -34,7 +34,7 @@ public:
 signals:
     // To communicate with Gui Thread we need to emit a signal
     void valueChanged(int);
-    void SignalPorcessFinished(bool);
+    void SignalProcessFinished(bool);
 
 public slots:
 

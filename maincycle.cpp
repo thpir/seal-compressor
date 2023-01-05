@@ -1,7 +1,5 @@
 #include "maincycle.h"
-#include "global.h"
 #include <QDebug>
-#include <QFile>
 #include <QString>
 #include <QTextStream>
 #include <QThread>
@@ -65,13 +63,13 @@ void MainCycle::doActionOnPin(int pinNum)
 {
     for(int n = 0; n < b_InputData.numOfSteps; n++)
     {
-        qDebug() << "highPIN";
+        //qDebug() << "highPIN";
         digitalWrite(pinNum, HIGH);
-        qDebug() << "100ms delay";
+        //qDebug() << "100ms delay";
         QThread::usleep(b_InputData.stepDuration);
-        qDebug() << "lowPIN";
+        //qDebug() << "lowPIN";
         digitalWrite(pinNum, LOW);
-        qDebug() << "100ms delay";
+        //qDebug() << "100ms delay";
         QThread::msleep(b_InputData.timeBetweenSteps);
     }
 }
@@ -110,7 +108,7 @@ void MainCycle::run()
             // Save i to the counter.txt file
             readWriteAction = QIODevice::WriteOnly;
             ReadWiteInTheFile(&cycleCounts, (QIODevice::OpenModeFlag) readWriteAction);
-            emit SignalPorcessFinished(true);
+            emit SignalProcessFinished(true);
             break;
         }
 

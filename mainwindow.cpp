@@ -21,7 +21,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Set the UI
     ui->setupUi(this);
-    uiButtonAction(false, false);
+    uiButtonAction(false, false, false);
 
     // Configure the statusbar
     updateStatusBar("Press \"start\" to begin the test...", QColor(Qt::yellow));
@@ -60,11 +60,9 @@ void MainWindow::initMainCycle()
         }
 
         // Connect signal/slot
-        connect(mainCycle, SIGNAL(valueChanged(int)),
-                this, SLOT(onValueChanged(int)));
+        connect(mainCycle, SIGNAL(valueChanged(int)), this, SLOT(onValueChanged(int)));
 
-        connect(mainCycle, SIGNAL(SignalProcessFinished(bool)),
-                this, SLOT(slotProcessFinished(bool)), Qt::ConnectionType::DirectConnection);
+        connect(mainCycle, SIGNAL(SignalProcessFinished(bool)), this, SLOT(SlotprocessFinished(bool)), Qt::ConnectionType::DirectConnection);
     }
 }
 
@@ -73,13 +71,21 @@ void MainWindow::onValueChanged(int count)
     ui->label->setText("Number of cycles: " + QString::number(count));
 }
 
-void MainWindow::slotProcessFinished(bool processFinished)
+void MainWindow::SlotprocessFinished(bool processFinished)
 {
     exitThePro = processFinished;
+    if(exitThePro)
+    {
+        // Update the UI
+        uiButtonAction(false, false, false);
+        // Configure the statusbar
+        updateStatusBar("Stopped...", QColor(Qt::red));
+    }
 }
 
-void MainWindow::uiButtonAction(bool startButton, bool otherButtons)
+void MainWindow::uiButtonAction(bool startButton, bool otherButtons, bool intermediateProcess)
 {
+    qDebug() << "uiButtonAction Called";
     if(startButton)
     {
         ui->buttonStart->setDisabled(true);
@@ -87,8 +93,15 @@ void MainWindow::uiButtonAction(bool startButton, bool otherButtons)
     }
     else
     {
-        ui->buttonStart->setDisabled(false);
-        ui->buttonStop->setDisabled(true);
+        if(intermediateProcess)
+        {
+            ui->buttonStart->setDisabled(true);
+            ui->buttonStop->setDisabled(true);
+        } else
+        {
+            ui->buttonStart->setDisabled(false);
+            ui->buttonStop->setDisabled(true);
+        }
     }
 
     ui->buttonReset->setDisabled(otherButtons);
@@ -103,10 +116,10 @@ void MainWindow::on_buttonStart_clicked()
     qDebug() << "Cycle started...";
 
     // Update the UI
-    uiButtonAction(true, true);
+    uiButtonAction(true, true, false);
 
     // Update the global variable
-    isRunning = true;
+    //isRunning = true;
 
     // Configure the statusbar
     updateStatusBar("Running ...", QColor(Qt::green));
@@ -130,24 +143,24 @@ void MainWindow::on_buttonStop_clicked()
     qDebug() << "Cycle stopped...";
 
     // Update the UI
-    uiButtonAction(false, false);
+    uiButtonAction(false, true, true);
 
     // Update the global variable
-    isRunning = false;
+    //isRunning = false;
 
     // Configure the statusbar
-    updateStatusBar("Stopped...", QColor(Qt::red));
+    updateStatusBar("Stopping, wait for finish...", QColor(Qt::yellow));
 
     // Interrupt the thread
     mainCycle->Stop = true;
 
-    while(true) {
-        if(exitThePro)
-        {
-            qDebug() << "Click on Start...";
-            break;
-        }
-    }
+    //while(true) {
+        //if(exitThePro)
+        //{
+            //qDebug() << "Click on Start...";
+            //break;
+        //}
+    //}
 
 }
 
@@ -196,7 +209,7 @@ void MainWindow::on_buttonSave_clicked()
 void MainWindow::on_actionQuit_triggered()
 {
     QString info_text = "Completing last cycle before closing...";
-    //QMessageBox::information(this, "Quitting appliction", info_text);
+    QMessageBox::information(this, "Quitting appliction", info_text);
     while (!mainCycle->b_InputData.cycleFinished) {
         // Do nothing
     }
